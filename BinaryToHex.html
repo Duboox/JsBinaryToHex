@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body style="white-space: pre">
+    <input type="file" id="file-selector" multiple />
+    <div id="hex"></div>
+    <script src="https://bundle.run/buffer"></script>
+    <script>
+      const fileSelector = document.getElementById("file-selector");
+      fileSelector.addEventListener("change", (event) => {
+        const fileList = event.target.files;
+        console.log(fileList);
+        var fr = new FileReader();
+        fr.onload = async function () {
+          console.log("fr.result", fr.result);
+          displayHexData(await buffer.Buffer.from(fr.result, "binary"));
+        };
+        
+
+        fr.readAsBinaryString(fileList[0]);
+      });
+
+      function displayHexData(data) {
+        let result = "";
+
+        for (let addr = 0; addr <= data.length; addr += 16) {
+          const displayAddr = addr.toString(16).toUpperCase().padStart(8, "0");
+          const block = data.slice(addr, Math.min(addr + 16, data.length));
+
+          let hexblock = Array.from(block)
+            .map((b) => b.toString(16).toUpperCase().padStart(2, "0"))
+            .join("");
+
+          if (addr + 16 > data.length) {
+            hexblock += "  ".repeat(16 - (data.length - addr));
+          }
+
+          const charsblock = Array.from(block)
+            .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
+            .join("");
+
+          result += `${displayAddr}    ${hexblock.split(/(.{2})/).join(" ")}            ${charsblock}\n`;
+        }
+
+        document.getElementById("hex").appendChild(document.createTextNode(result));
+      }
+    </script>
+  </body>
+</html>
