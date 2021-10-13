@@ -20,12 +20,16 @@
           console.log("fr.result", fr.result);
           displayHexData(await buffer.Buffer.from(fr.result, "binary"));
         };
-        
 
         fr.readAsBinaryString(fileList[0]);
       });
 
       function displayHexData(data) {
+        const startOffsetInDecimal = 2048;
+        const blocksLength = 128;
+        let actualOffset = null;
+        let blockOfData = [];
+
         let result = "";
 
         for (let addr = 0; addr <= data.length; addr += 16) {
@@ -44,8 +48,34 @@
             .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
             .join("");
 
+          if (parseInt(displayAddr, 16) >= startOffsetInDecimal) {
+            //start building blocks
+            const actualBlock = blockOfData.findIndex((block) => block.offset === actualOffset);
+            const addressShort = displayAddr.substr(displayAddr.length - 4);
+            if (actualBlock !== -1) {
+              if (blockOfData[actualBlock].data.length >= blocksLength) {
+                actualOffset = addressShort;
+                blockOfData.push({ offset: addressShort, data: hexblock });
+              } else {
+                blockOfData[actualBlock].data += hexblock;
+              }
+            } else {
+              actualOffset = addressShort;
+              blockOfData.push({ offset: addressShort, data: hexblock });
+            }
+          }
           result += `${displayAddr}    ${hexblock.split(/(.{2})/).join(" ")}            ${charsblock}\n`;
         }
+        //checkLastBlock
+        blockOfData[blockOfData.length - 1].data = blockOfData[blockOfData.length - 1].data.replace(/ /g, "");
+        const lastBlockDataLength = blockOfData[blockOfData.length - 1].data.length;
+        if (lastBlockDataLength < blocksLength) {
+          // fill block of data with 0
+          for (let i = lastBlockDataLength; i < blocksLength; i++) {
+            blockOfData[blockOfData.length - 1].data += "0";
+          }
+        }
+        console.log("blockOfData", blockOfData);
 
         document.getElementById("hex").appendChild(document.createTextNode(result));
       }
